@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Student Portal</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Welcome Header Banner -->
+    <div class="card" style="background: linear-gradient(135deg, #1e3a8a, #0f172a); color: white; border: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span class="badge" style="background: rgba(255,255,255,0.15); color: #93c5fd; margin-bottom: 0.5rem;">Student Dashboard</span>
+          <h1 id="student-welcome-name" style="font-size: 1.8rem; font-weight: 700;">Welcome, Student</h1>
+          <p id="student-welcome-email" style="color: #cbd5e1; font-size: 0.9rem;">student@college.com</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <a href="books.html" class="btn btn-primary" style="background: #3b82f6;">🔍 Browse Books</a>
+          <a href="my-borrowings.html" class="btn btn-secondary">📋 My Borrowings</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue Alert Notice (if applicable) -->
+    <div id="overdue-banner" style="display: none; margin-bottom: 1.5rem; background-color: var(--danger-bg); border: 1px solid rgba(239,68,68,0.3); border-radius: var(--radius-md); padding: 1rem 1.25rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.5rem;">⚠️</span>
+          <div>
+            <strong style="color: #dc2626; font-size: 0.95rem;">Action Required: You have overdue book(s)!</strong>
+            <p id="overdue-banner-text" style="color: #991b1b; font-size: 0.85rem; margin-top: 0.15rem;">
+              Late fee accrues at ₹5 per day. Please return them to the library immediately.
+            </p>
+          </div>
+        </div>
+        <a href="my-borrowings.html" class="btn btn-danger btn-sm">View Details & Fines</a>
+      </div>
+    </div>
+
+    <!-- Student Metric Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Active Loans</h3>
+          <div class="stat-value" id="student-active-count">0</div>
+          <div class="stat-desc">Books currently with you</div>
+        </div>
+        <div class="stat-icon icon-blue">📚</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Books Returned</h3>
+          <div class="stat-value" id="student-returned-count">0</div>
+          <div class="stat-desc">Completed past borrowings</div>
+        </div>
+        <div class="stat-icon icon-green">✅</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Overdue Books</h3>
+          <div class="stat-value" id="student-overdue-count" style="color: var(--danger);">0</div>
+          <div class="stat-desc">Past 7-day limit</div>
+        </div>
+        <div class="stat-icon icon-red">⏰</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Pending Penalties</h3>
+          <div class="stat-value" id="student-fine-count" style="color: #d97706;">₹0</div>
+          <div class="stat-desc">Calculated at ₹5/day</div>
+        </div>
+        <div class="stat-icon icon-amber">💰</div>
+      </div>
+    </div>
+
+    <!-- Recent Borrowings Section -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Recent Borrowings</h2>
+        <a href="my-borrowings.html" class="btn btn-secondary btn-sm">View All History →</a>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Book Title</th>
+              <th>Category</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Overdue Days</th>
+              <th>Estimated Penalty</th>
+            </tr>
+          </thead>
+          <tbody id="student-recent-tbody">
+            <tr><td colspan="7" style="text-align:center; padding: 2rem;">Loading borrowing history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick Borrow Action Card -->
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h3 style="font-size: 1.1rem; color: var(--primary-navy);">Need reference material for your B.Tech course?</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">Search thousands of engineering and computing textbooks available in the library catalog.</p>
+      </div>
+      <a href="books.html" class="btn btn-primary">Browse All Books</a>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = checkAuth(['STUDENT']);
+      if (!user) return;
+
+      document.getElementById('student-welcome-name').textContent = `Welcome, ${user.name}`;
+      document.getElementById('student-welcome-email').textContent = `${user.email} (Student ID #${user.id})`;
+
+      loadStudentData();
+    });
+
+    async function loadStudentData() {
+      try {
+        const records = await apiGet('/borrow/my');
+
+        let activeCount = 0;
+        let returnedCount = 0;
+        let overdueCount = 0;
+        let totalFines = 0;
+
+        records.forEach(r => {
+          if (r.status === 'BORROWED') {
+            activeCount++;
+            if (r.overdue) {
+              overdueCount++;
+              totalFines += r.estimatedPenalty;
+            }
+          } else if (r.status === 'RETURNED') {
+            returnedCount++;
+            if (!r.penaltyPaid && r.penaltyAmount > 0) {
+              totalFines += r.penaltyAmount;
+            }
+          }
+        });
+
+        document.getElementById('student-active-count').textContent = activeCount;
+        document.getElementById('student-returned-count').textContent = returnedCount;
+        document.getElementById('student-overdue-count').textContent = overdueCount;
+        document.getElementById('student-fine-count').textContent = `₹${totalFines}`;
+
+        if (overdueCount > 0) {
+          const banner = document.getElementById('overdue-banner');
+          banner.style.display = 'block';
+          document.getElementById('overdue-banner-text').textContent = 
+            `You have ${overdueCount} overdue book(s) with an estimated penalty of ₹${totalFines} (Rate: ₹5/day). Please return them soon!`;
+        }
+
+        const tbody = document.getElementById('student-recent-tbody');
+        if (records.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">You have not borrowed any books yet. <a href="books.html">Browse Books</a></td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = records.slice(0, 5).map(r => {
+          let statusBadge = '';
+          if (r.status === 'RETURNED') {
+            statusBadge = '<span class="badge badge-success">Returned</span>';
+          } else if (r.overdue) {
+            statusBadge = '<span class="badge badge-danger">Overdue</span>';
+          } else {
+            statusBadge = '<span class="badge badge-info">Active</span>';
+          }
+
+          const penaltyDisplay = r.status === 'RETURNED' 
+            ? (r.penaltyAmount > 0 ? `₹${r.penaltyAmount} (${r.penaltyPaid ? 'Paid' : 'Unpaid'})` : '₹0')
+            : (r.overdue ? `₹${r.estimatedPenalty} (Est.)` : '₹0');
+
+          return `
+            <tr>
+              <td style="font-weight: 600;">${escapeHtml(r.bookTitle)}</td>
+              <td><span class="badge badge-secondary">${escapeHtml(r.bookCategory)}</span></td>
+              <td>${r.issueDate}</td>
+              <td style="font-weight: 600; color: ${r.overdue ? 'var(--danger)' : 'inherit'};">${r.dueDate}</td>
+              <td>${statusBadge}</td>
+              <td>${r.overdueDays > 0 ? `<strong style="color: var(--danger);">${r.overdueDays} days</strong>` : '0 days'}</td>
+              <td><strong>${penaltyDisplay}</strong></td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        showToast('Error loading student records: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

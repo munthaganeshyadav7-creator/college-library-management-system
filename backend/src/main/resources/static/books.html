@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Catalog - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Book Catalog</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <div class="card-header" style="border: none; padding-bottom: 0;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--primary-navy);">Library Catalog</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Browse and borrow textbooks, research papers, and technical manuals.</p>
+      </div>
+    </div>
+
+    <!-- Search & Filter Toolbar -->
+    <div class="toolbar" style="margin-top: 1rem;">
+      <div class="search-box">
+        <input type="text" id="catalog-search-input" class="form-control" placeholder="Search by title, author, or category...">
+        <button class="btn btn-primary" onclick="searchCatalog()">Search</button>
+        <button class="btn btn-secondary" onclick="resetSearch()">Reset</button>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="category-filter" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Category:</label>
+        <select id="category-filter" class="form-control" style="width: auto;" onchange="filterCategory()">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Books Table -->
+    <div class="card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Book Title</th>
+              <th>Author</th>
+              <th>Category</th>
+              <th>Total Copies</th>
+              <th>Available Copies</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="books-table-tbody">
+            <tr><td colspan="7" style="text-align:center; padding: 2.5rem;">Loading library books...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Borrow Confirmation Modal -->
+  <div id="borrow-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Book Borrowing</h3>
+        <button class="modal-close" onclick="closeBorrowModal()">&times;</button>
+      </div>
+      <div id="modal-body-content">
+        <p>Are you sure you want to borrow this book?</p>
+        <div style="background-color: #f8fafc; border-radius: var(--radius-sm); padding: 1rem; margin: 1rem 0;">
+          <p><strong id="modal-book-title">Title</strong></p>
+          <p style="font-size: 0.85rem; color: var(--text-muted);" id="modal-book-author">Author</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Loan Period: <strong>7 Days</strong><br>
+            Daily Overdue Penalty: <strong>₹5 / day</strong>
+          </p>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button class="btn btn-secondary" onclick="closeBorrowModal()">Cancel</button>
+          <button class="btn btn-primary" id="btn-confirm-borrow" onclick="confirmBorrow()">Confirm & Borrow</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    let allBooks = [];
+    let selectedBookId = null;
+
+    async function loadBooks(query = '') {
+      try {
+        const url = query ? `/books?search=${encodeURIComponent(query)}` : '/books';
+        allBooks = await apiGet(url);
+        populateCategoryFilter(allBooks);
+        renderBooks(allBooks);
+      } catch (err) {
+        document.getElementById('books-table-tbody').innerHTML = 
+          `<tr><td colspan="7" style="text-align:center; color: var(--danger); padding: 2rem;">Failed to load books: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function populateCategoryFilter(books) {
+      const select = document.getElementById('category-filter');
+      const currentVal = select.value;
+      const categories = [...new Set(books.map(b => b.category))].sort();
+
+      select.innerHTML = '<option value="">All Categories</option>' + 
+        categories.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
+    }
+
+    function filterCategory() {
+      const selected = document.getElementById('category-filter').value;
+      if (!selected) {
+        renderBooks(allBooks);
+      } else {
+        const filtered = allBooks.filter(b => b.category.toLowerCase() === selected.toLowerCase());
+        renderBooks(filtered);
+      }
+    }
+
+    function renderBooks(books) {
+      const tbody = document.getElementById('books-table-tbody');
+      const user = getAuthUser();
+
+      if (!books || books.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted);">No books found matching criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = books.map(b => {
+        const isAvailable = b.availableQuantity > 0;
+        let actionBtn = '';
+
+        if (!user) {
+          actionBtn = `<a href="login.html" class="btn btn-secondary btn-sm">Login to Borrow</a>`;
+        } else if (user.role === 'STUDENT') {
+          if (isAvailable) {
+            actionBtn = `<button class="btn btn-primary btn-sm" onclick="openBorrowModal(${b.id})">Borrow Book</button>`;
+          } else {
+            actionBtn = `<button class="btn btn-secondary btn-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Out of Stock</button>`;
+          }
+        } else if (user.role === 'LIBRARIAN' || user.role === 'ADMIN') {
+          actionBtn = `<a href="issue-return.html?bookId=${b.id}" class="btn btn-secondary btn-sm">Issue to Student</a>`;
+        }
+
+        return `
+          <tr>
+            <td>#${b.id}</td>
+            <td style="font-weight: 600;">${escapeHtml(b.title)}</td>
+            <td>${escapeHtml(b.author)}</td>
+            <td><span class="badge badge-secondary">${escapeHtml(b.category)}</span></td>
+            <td>${b.quantity}</td>
+            <td>
+              <span class="badge ${isAvailable ? 'badge-success' : 'badge-danger'}">
+                ${b.availableQuantity} ${isAvailable ? 'Available' : 'Unavailable'}
+              </span>
+            </td>
+            <td>${actionBtn}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function searchCatalog() {
+      const query = document.getElementById('catalog-search-input').value.trim();
+      loadBooks(query);
+    }
+
+    function resetSearch() {
+      document.getElementById('catalog-search-input').value = '';
+      document.getElementById('category-filter').value = '';
+      loadBooks();
+    }
+
+    document.getElementById('catalog-search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchCatalog();
+    });
+
+    function openBorrowModal(bookId) {
+      const book = allBooks.find(item => item.id === bookId);
+      if (!book) return;
+      selectedBookId = bookId;
+      document.getElementById('modal-book-title').textContent = book.title;
+      document.getElementById('modal-book-author').textContent = `Author: ${book.author}`;
+      document.getElementById('borrow-modal').style.display = 'flex';
+    }
+
+    function closeBorrowModal() {
+      document.getElementById('borrow-modal').style.display = 'none';
+      selectedBookId = null;
+    }
+
+    async function confirmBorrow() {
+      if (!selectedBookId) return;
+      const btn = document.getElementById('btn-confirm-borrow');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      try {
+        const res = await apiPost('/borrow', { bookId: selectedBookId });
+        showToast(res.message || 'Book borrowed successfully!', 'success');
+        closeBorrowModal();
+        loadBooks(); // refresh stock numbers
+      } catch (err) {
+        showToast(err.message || 'Failed to borrow book', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirm & Borrow';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBooks();
+    });
+  </script>
+</body>
+</html>

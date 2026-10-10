@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Borrowings - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">My Borrowings</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <div class="card-header" style="border: none; padding-bottom: 0;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--primary-navy);">My Borrowing Records</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Track all current issues, due dates, return confirmations, and penalties.</p>
+      </div>
+      <a href="books.html" class="btn btn-primary btn-sm">+ Borrow Another Book</a>
+    </div>
+
+    <!-- Loan Rules Notice -->
+    <div class="card" style="margin-top: 1rem; background-color: #f8fafc; border-left: 4px solid var(--accent-blue);">
+      <p style="font-size: 0.88rem; color: var(--text-main);">
+        📌 <strong>College Library Policy:</strong> Books are issued for a maximum period of <strong>7 Days</strong>. 
+        Late returns incur an automatic penalty of <strong>₹5 per overdue day</strong>. Returns are verified and accepted at the library circulation desk.
+      </p>
+    </div>
+
+    <!-- Borrowing Records Table -->
+    <div class="card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Book Title</th>
+              <th>Category</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Return Date</th>
+              <th>Status</th>
+              <th>Overdue Days</th>
+              <th>Penalty Amount</th>
+              <th>Penalty Status</th>
+            </tr>
+          </thead>
+          <tbody id="my-borrowings-tbody">
+            <tr><td colspan="10" style="text-align:center; padding: 2.5rem;">Loading your borrowing records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = checkAuth(['STUDENT']);
+      if (!user) return;
+      loadMyBorrowings();
+    });
+
+    async function loadMyBorrowings() {
+      try {
+        const records = await apiGet('/borrow/my');
+        const tbody = document.getElementById('my-borrowings-tbody');
+
+        if (!records || records.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 2.5rem; color: var(--text-muted);">
+            No borrowing records found. <br><a href="books.html" class="btn btn-primary btn-sm" style="margin-top: 0.5rem;">Explore Catalog & Borrow</a>
+          </td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = records.map(r => {
+          let statusBadge = '';
+          if (r.status === 'RETURNED') {
+            statusBadge = '<span class="badge badge-success">Returned</span>';
+          } else if (r.overdue) {
+            statusBadge = '<span class="badge badge-danger">Overdue</span>';
+          } else {
+            statusBadge = '<span class="badge badge-info">Active</span>';
+          }
+
+          let penaltyBadge = '<span class="badge badge-secondary">None (₹0)</span>';
+          let penaltyDisplay = '₹0';
+
+          if (r.status === 'RETURNED') {
+            if (r.penaltyAmount > 0) {
+              penaltyDisplay = `₹${r.penaltyAmount}`;
+              penaltyBadge = r.penaltyPaid 
+                ? '<span class="badge badge-success">Paid</span>' 
+                : '<span class="badge badge-danger">Unpaid</span>';
+            }
+          } else {
+            if (r.overdue) {
+              penaltyDisplay = `<span style="color: var(--danger); font-weight:700;">₹${r.estimatedPenalty} (Est.)</span>`;
+              penaltyBadge = '<span class="badge badge-warning">Pending Return</span>';
+            }
+          }
+
+          return `
+            <tr>
+              <td>#${r.id}</td>
+              <td style="font-weight: 600;">${escapeHtml(r.bookTitle)}</td>
+              <td><span class="badge badge-secondary">${escapeHtml(r.bookCategory)}</span></td>
+              <td>${r.issueDate}</td>
+              <td style="font-weight: 600; color: ${r.overdue ? 'var(--danger)' : 'inherit'};">${r.dueDate}</td>
+              <td>${r.returnDate ? r.returnDate : '<em style="color: var(--text-light);">Not returned</em>'}</td>
+              <td>${statusBadge}</td>
+              <td>${r.overdueDays > 0 ? `<strong style="color: var(--danger);">${r.overdueDays} days</strong>` : '0 days'}</td>
+              <td>${penaltyDisplay}</td>
+              <td>${penaltyBadge}</td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        document.getElementById('my-borrowings-tbody').innerHTML = 
+          `<tr><td colspan="10" style="text-align:center; color: var(--danger); padding: 2rem;">Failed to load records: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>

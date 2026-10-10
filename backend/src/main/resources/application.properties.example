@@ -1,0 +1,26 @@
+# ===================================================================
+# College Library Management System - Configuration Example
+# ===================================================================
+
+server.port=${PORT:8085}
+library.demo-data.enabled=${LIBRARY_DEMO_DATA_ENABLED:false}
+
+# Database Configuration (MySQL / PostgreSQL):
+# For local MySQL:
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/library_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:root}}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:root}}
+
+# For Render / PostgreSQL (example):
+# spring.datasource.url=jdbc:postgresql://<host>:<port>/<database>
+# spring.datasource.username=<username>
+# spring.datasource.password=<password>
+
+# JPA / Hibernate Settings (Hibernate automatically detects the dialect)
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.open-in-view=true
+
+# Static Resources Mapping
+spring.web.resources.static-locations=classpath:/static/,file:../frontend/,file:frontend/
+spring.mvc.static-path-pattern=/**

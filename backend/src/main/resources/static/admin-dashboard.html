@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">🛡️</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Administrator Portal</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <div class="card" style="background: linear-gradient(135deg, #0f172a, #1e3a8a); color: white; border: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span class="badge" style="background: rgba(255,255,255,0.15); color: #93c5fd; margin-bottom: 0.5rem;">System Administration</span>
+          <h1 id="admin-welcome-name" style="font-size: 1.8rem; font-weight: 700;">Executive Dashboard</h1>
+          <p id="admin-welcome-email" style="color: #cbd5e1; font-size: 0.9rem;">admin@library.com</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <a href="reports.html" class="btn btn-primary" style="background: #2563eb;">📊 Detailed Reports</a>
+          <a href="manage-books.html" class="btn btn-secondary">📚 Inventory Control</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Administrative KPI Cards Grid (Section 4.C Requirements) -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Total Titles</h3>
+          <div class="stat-value" id="admin-stat-titles">--</div>
+          <div class="stat-desc">Unique catalog books</div>
+        </div>
+        <div class="stat-icon icon-blue">📚</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Total Copies</h3>
+          <div class="stat-value" id="admin-stat-total-copies">--</div>
+          <div class="stat-desc">Entire inventory volume</div>
+        </div>
+        <div class="stat-icon icon-purple">📦</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Available Copies</h3>
+          <div class="stat-value" id="admin-stat-avail-copies">--</div>
+          <div class="stat-desc">Ready on library shelves</div>
+        </div>
+        <div class="stat-icon icon-green">✅</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Registered Students</h3>
+          <div class="stat-value" id="admin-stat-students">--</div>
+          <div class="stat-desc">Active borrower accounts</div>
+        </div>
+        <div class="stat-icon icon-blue">👨‍🎓</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Active Loans</h3>
+          <div class="stat-value" id="admin-stat-active-loans">--</div>
+          <div class="stat-desc">Currently with students</div>
+        </div>
+        <div class="stat-icon icon-amber">⏳</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Returned Books</h3>
+          <div class="stat-value" id="admin-stat-returned-loans">--</div>
+          <div class="stat-desc">Completed borrowings</div>
+        </div>
+        <div class="stat-icon icon-green">📥</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Overdue Books</h3>
+          <div class="stat-value" id="admin-stat-overdue-loans" style="color: var(--danger);">--</div>
+          <div class="stat-desc">Exceeded 7-day limit</div>
+        </div>
+        <div class="stat-icon icon-red">⚠️</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Total Recorded Fines</h3>
+          <div class="stat-value" id="admin-stat-total-fines" style="color: #2563eb;">₹0</div>
+          <div class="stat-desc">All historical & active fines</div>
+        </div>
+        <div class="stat-icon icon-blue">💰</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Unpaid Penalties</h3>
+          <div class="stat-value" id="admin-stat-unpaid-fines" style="color: #dc2626;">₹0</div>
+          <div class="stat-desc">Pending collection</div>
+        </div>
+        <div class="stat-icon icon-red">🪙</div>
+      </div>
+    </div>
+
+    <!-- Registered Students Overview -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Registered Students Roster</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Loaded directly from MySQL database</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Email Address</th>
+              <th>Phone</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="admin-students-tbody">
+            <tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading registered students...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = checkAuth(['ADMIN']);
+      if (!user) return;
+
+      document.getElementById('admin-welcome-name').textContent = `Welcome, ${user.name}`;
+      document.getElementById('admin-welcome-email').textContent = `${user.email} (Administrator)`;
+
+      loadAdminDashboardData();
+    });
+
+    async function loadAdminDashboardData() {
+      try {
+        const stats = await apiGet('/dashboard');
+        document.getElementById('admin-stat-titles').textContent = stats.totalBookTitles ?? '0';
+        document.getElementById('admin-stat-total-copies').textContent = stats.totalCopies ?? '0';
+        document.getElementById('admin-stat-avail-copies').textContent = stats.availableCopies ?? '0';
+        document.getElementById('admin-stat-students').textContent = stats.registeredStudents ?? '0';
+        document.getElementById('admin-stat-active-loans').textContent = stats.activeLoans ?? '0';
+        document.getElementById('admin-stat-returned-loans').textContent = stats.returnedLoans ?? '0';
+        document.getElementById('admin-stat-overdue-loans').textContent = stats.overdueLoans ?? '0';
+        document.getElementById('admin-stat-total-fines').textContent = `₹${stats.totalPenalties ?? 0}`;
+        document.getElementById('admin-stat-unpaid-fines').textContent = `₹${stats.unpaidPenalties ?? 0}`;
+
+        const students = await apiGet('/students');
+        renderStudentsRoster(students);
+      } catch (err) {
+        showToast('Error loading admin dashboard: ' + err.message, 'error');
+      }
+    }
+
+    function renderStudentsRoster(students) {
+      const tbody = document.getElementById('admin-students-tbody');
+      if (!students || students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No students registered yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = students.map(s => `
+        <tr>
+          <td>#${s.id}</td>
+          <td style="font-weight: 600;">${escapeHtml(s.name)}</td>
+          <td>${escapeHtml(s.email)}</td>
+          <td>${escapeHtml(s.phone || 'N/A')}</td>
+          <td>
+            <span class="badge ${s.active ? 'badge-success' : 'badge-danger'}">
+              ${s.active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+  </script>
+</body>
+</html>

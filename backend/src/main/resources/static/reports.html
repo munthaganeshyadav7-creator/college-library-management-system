@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Reports - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .report-tabs {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .report-tab {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: var(--transition);
+    }
+    .report-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+    .report-pane {
+      display: none;
+    }
+    .report-pane.active {
+      display: block;
+    }
+    @media print {
+      .navbar, .report-tabs, .btn, .footer, .toolbar { display: none !important; }
+      .main-content { margin: 0; padding: 0; max-width: 100%; }
+      .card { border: none; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📊</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Reports & Analytics</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <div class="card-header" style="border: none; padding-bottom: 0;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--primary-navy);">Administrative Audit Reports</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Comprehensive borrowing statements, overdue audits, and penalty ledgers.</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print / Export PDF</button>
+    </div>
+
+    <!-- Report Tabs -->
+    <div class="report-tabs" style="margin-top: 1rem;">
+      <div class="report-tab active" onclick="switchReportTab('borrowing')">📑 All Borrowing Transactions</div>
+      <div class="report-tab" onclick="switchReportTab('overdue')">⚠️ Overdue Audit Report</div>
+      <div class="report-tab" onclick="switchReportTab('penalties')">💰 Penalty & Fine Statement</div>
+    </div>
+
+    <!-- PANE 1: BORROWING TRANSACTIONS -->
+    <div id="pane-borrowing" class="report-pane active">
+      <div class="card">
+        <div class="card-header">
+          <h2>Master Borrowing Ledger</h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Historical and active records</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Student Name</th>
+                <th>Student Email</th>
+                <th>Book Title</th>
+                <th>Category</th>
+                <th>Issue Date</th>
+                <th>Due Date</th>
+                <th>Return Date</th>
+                <th>Status</th>
+                <th>Fine</th>
+              </tr>
+            </thead>
+            <tbody id="report-borrowing-tbody">
+              <tr><td colspan="10" style="text-align: center; padding: 2rem;">Loading borrowing statement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 2: OVERDUE AUDIT -->
+    <div id="pane-overdue" class="report-pane">
+      <div class="card" style="border-left: 4px solid var(--danger);">
+        <div class="card-header">
+          <h2 style="color: var(--danger);">Overdue Loans Statement</h2>
+          <span class="badge badge-danger">7-Day Period Exceeded</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Loan ID</th>
+                <th>Student</th>
+                <th>Contact</th>
+                <th>Book Title</th>
+                <th>Issue Date</th>
+                <th>Due Date</th>
+                <th>Days Overdue</th>
+                <th>Current Penalty (₹5/day)</th>
+              </tr>
+            </thead>
+            <tbody id="report-overdue-tbody">
+              <tr><td colspan="8" style="text-align: center; padding: 2rem;">Loading overdue audit...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 3: PENALTIES LEDGER -->
+    <div id="pane-penalties" class="report-pane">
+      <div class="card">
+        <div class="card-header">
+          <h2>Penalty Collection & Revenue Ledger</h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Track settled and pending fines</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Loan ID</th>
+                <th>Student Name</th>
+                <th>Book Title</th>
+                <th>Return Date</th>
+                <th>Penalty Amount</th>
+                <th>Payment Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="report-penalties-tbody">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading penalty ledger...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    let masterRecords = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = checkAuth(['ADMIN', 'LIBRARIAN']);
+      if (!user) return;
+      loadAllReports();
+    });
+
+    async function loadAllReports() {
+      try {
+        masterRecords = await apiGet('/reports/borrowing');
+        renderBorrowingReport(masterRecords);
+
+        const overdueRecords = await apiGet('/reports/overdue');
+        renderOverdueReport(overdueRecords);
+
+        renderPenaltiesReport(masterRecords);
+      } catch (err) {
+        showToast('Error loading reports: ' + err.message, 'error');
+      }
+    }
+
+    function switchReportTab(tab) {
+      document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.report-pane').forEach(p => p.classList.remove('active'));
+
+      if (tab === 'borrowing') {
+        document.querySelectorAll('.report-tab')[0].classList.add('active');
+        document.getElementById('pane-borrowing').classList.add('active');
+      } else if (tab === 'overdue') {
+        document.querySelectorAll('.report-tab')[1].classList.add('active');
+        document.getElementById('pane-overdue').classList.add('active');
+      } else if (tab === 'penalties') {
+        document.querySelectorAll('.report-tab')[2].classList.add('active');
+        document.getElementById('pane-penalties').classList.add('active');
+      }
+    }
+
+    function renderBorrowingReport(records) {
+      const tbody = document.getElementById('report-borrowing-tbody');
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 2rem; color: var(--text-muted);">No records found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map(r => `
+        <tr>
+          <td>#${r.id}</td>
+          <td style="font-weight: 600;">${escapeHtml(r.studentName)}</td>
+          <td>${escapeHtml(r.studentEmail)}</td>
+          <td>${escapeHtml(r.bookTitle)}</td>
+          <td><span class="badge badge-secondary">${escapeHtml(r.bookCategory)}</span></td>
+          <td>${r.issueDate}</td>
+          <td>${r.dueDate}</td>
+          <td>${r.returnDate || '<em style="color:var(--text-light)">Active</em>'}</td>
+          <td>
+            <span class="badge ${r.status === 'RETURNED' ? 'badge-success' : (r.overdue ? 'badge-danger' : 'badge-info')}">
+              ${r.status}
+            </span>
+          </td>
+          <td>${r.penaltyAmount > 0 ? '₹' + r.penaltyAmount : (r.estimatedPenalty > 0 ? '₹' + r.estimatedPenalty + ' (Est.)' : '₹0')}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderOverdueReport(records) {
+      const tbody = document.getElementById('report-overdue-tbody');
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--success); font-weight: 600;">All books are on schedule. No overdue loans found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map(r => `
+        <tr>
+          <td>#${r.id}</td>
+          <td style="font-weight: 600;">${escapeHtml(r.studentName)}</td>
+          <td>${escapeHtml(r.studentPhone || r.studentEmail)}</td>
+          <td>${escapeHtml(r.bookTitle)}</td>
+          <td>${r.issueDate}</td>
+          <td style="color: var(--danger); font-weight: 700;">${r.dueDate}</td>
+          <td><strong style="color: var(--danger);">${r.overdueDays} days</strong></td>
+          <td><strong style="color: var(--danger); font-size: 1.05rem;">₹${r.estimatedPenalty}</strong></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderPenaltiesReport(records) {
+      const tbody = document.getElementById('report-penalties-tbody');
+      // Filter records that have incurred penalties (returned with penalty, or overdue)
+      const penaltyRecords = records.filter(r => (r.penaltyAmount > 0) || (r.estimatedPenalty > 0));
+
+      if (penaltyRecords.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">No penalties recorded across the system.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = penaltyRecords.map(r => {
+        const fine = r.status === 'RETURNED' ? r.penaltyAmount : r.estimatedPenalty;
+        const isPaid = Boolean(r.penaltyPaid);
+
+        let statusBadge = isPaid 
+          ? '<span class="badge badge-success">Paid</span>' 
+          : '<span class="badge badge-danger">Unpaid</span>';
+
+        let actionBtn = '';
+        if (r.status === 'RETURNED' && !isPaid && r.penaltyAmount > 0) {
+          actionBtn = `<button class="btn btn-success btn-sm" onclick="markFinePaid(${r.id})">Mark Paid</button>`;
+        } else if (r.status === 'BORROWED') {
+          actionBtn = `<span style="font-size:0.75rem; color:var(--text-muted);">Pay upon return</span>`;
+        } else {
+          actionBtn = `<span style="font-size:0.75rem; color:var(--success); font-weight:600;">✓ Settled</span>`;
+        }
+
+        return `
+          <tr>
+            <td>#${r.id}</td>
+            <td style="font-weight: 600;">${escapeHtml(r.studentName)}</td>
+            <td>${escapeHtml(r.bookTitle)}</td>
+            <td>${r.returnDate || '<em style="color: var(--danger);">Active (Unreturned)</em>'}</td>
+            <td><strong style="color: var(--danger);">₹${fine}</strong></td>
+            <td>${statusBadge}</td>
+            <td>${actionBtn}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function markFinePaid(id) {
+      if (!confirm(`Mark penalty for Loan #${id} as paid?`)) return;
+
+      try {
+        const res = await apiPut(`/borrow/${id}/pay-penalty`);
+        showToast(res.message || 'Penalty marked as paid!', 'success');
+        loadAllReports();
+      } catch (err) {
+        showToast(err.message || 'Failed to update penalty status', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

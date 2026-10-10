@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Management System</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Injected dynamically by script.js -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <span class="hero-tag">B.Tech Technical Training Project</span>
+        <h1>Knowledge at Your Fingertips</h1>
+        <p>A smart, digital college library solution for borrowing books, tracking overdue loans, managing inventory, and administrative insights.</p>
+        <div class="hero-actions">
+          <a href="books.html" class="btn btn-primary btn-lg" id="btn-explore-hero">Explore Books</a>
+          <a href="login.html" class="btn btn-secondary btn-lg" id="btn-login-hero">Member Login</a>
+          <a href="register.html" class="btn btn-secondary btn-lg" id="btn-register-hero">Student Registration</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Cards (Section 3 Requirement) -->
+    <section>
+      <div class="card-header" style="border: none; margin-bottom: 0.75rem;">
+        <h2>Library Snapshot</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Real-time statistics from MySQL database</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>Total Book Titles</h3>
+            <div class="stat-value" id="stat-total-titles">--</div>
+            <div class="stat-desc">Unique catalog titles</div>
+          </div>
+          <div class="stat-icon icon-blue">📖</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>Available Copies</h3>
+            <div class="stat-value" id="stat-available-copies">--</div>
+            <div class="stat-desc">Ready to borrow today</div>
+          </div>
+          <div class="stat-icon icon-green">✅</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>Active Loans</h3>
+            <div class="stat-value" id="stat-active-loans">--</div>
+            <div class="stat-desc">Currently with students</div>
+          </div>
+          <div class="stat-icon icon-amber">⏳</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>Overdue Books</h3>
+            <div class="stat-value" id="stat-overdue-loans" style="color: var(--danger);">--</div>
+            <div class="stat-desc">Exceeded 7-day return limit</div>
+          </div>
+          <div class="stat-icon icon-red">⚠️</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Search Preview -->
+    <section class="card">
+      <div class="card-header">
+        <h2>Quick Book Search</h2>
+        <a href="books.html" class="btn btn-secondary btn-sm">View Full Catalog →</a>
+      </div>
+      <div class="toolbar" style="margin-bottom: 1rem;">
+        <div class="search-box">
+          <input type="text" id="quick-search-input" class="form-control" placeholder="Search by title, author, or category (e.g. Java, Algorithms)...">
+          <button class="btn btn-primary" onclick="searchQuickBooks()">Search</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Category</th>
+              <th>Available Copies</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="quick-books-tbody">
+            <tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading books from catalog...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+    <p style="font-size: 0.75rem; margin-top: 0.25rem;">Built with Java 17, Spring Boot 3.x, Spring Data JPA, Spring Security, MySQL 8.x, and Vanilla JS</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    async function loadHomeStats() {
+      const user = getAuthUser();
+      if (!user || !['LIBRARIAN', 'ADMIN'].includes(user.role)) {
+        ['stat-total-titles', 'stat-available-copies', 'stat-active-loans', 'stat-overdue-loans']
+          .forEach(id => document.getElementById(id).textContent = '—');
+        return;
+      }
+
+      try {
+        const stats = await apiGet('/dashboard');
+        document.getElementById('stat-total-titles').textContent = stats.totalBookTitles ?? '0';
+        document.getElementById('stat-available-copies').textContent = stats.availableCopies ?? '0';
+        document.getElementById('stat-active-loans').textContent = stats.activeLoans ?? '0';
+        document.getElementById('stat-overdue-loans').textContent = stats.overdueLoans ?? '0';
+      } catch (err) {
+        console.warn('Could not load live stats:', err);
+      }
+    }
+
+    async function loadQuickBooks(query = '') {
+      try {
+        const url = query ? `/books?search=${encodeURIComponent(query)}` : '/books';
+        const books = await apiGet(url);
+        const tbody = document.getElementById('quick-books-tbody');
+        if (!books || books.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">No books found matching search criteria.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = books.slice(0, 5).map(b => `
+          <tr>
+            <td style="font-weight: 600;">${escapeHtml(b.title)}</td>
+            <td>${escapeHtml(b.author)}</td>
+            <td><span class="badge badge-secondary">${escapeHtml(b.category)}</span></td>
+            <td>
+              <span class="badge ${b.availableQuantity > 0 ? 'badge-success' : 'badge-danger'}">
+                ${b.availableQuantity} of ${b.quantity} Available
+              </span>
+            </td>
+            <td>
+              <a href="books.html" class="btn btn-secondary btn-sm">Details</a>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        document.getElementById('quick-books-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--danger); padding: 1.5rem;">Failed to load books catalog.</td></tr>`;
+      }
+    }
+
+    function searchQuickBooks() {
+      const q = document.getElementById('quick-search-input').value.trim();
+      loadQuickBooks(q);
+    }
+
+    document.getElementById('quick-search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchQuickBooks();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHomeStats();
+      loadQuickBooks();
+    });
+  </script>
+</body>
+</html>

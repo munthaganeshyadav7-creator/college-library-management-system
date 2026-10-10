@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Issue & Return Desk - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .desk-tabs {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 2rem;
+    }
+    .desk-tab {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: var(--transition);
+    }
+    .desk-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+    .desk-pane {
+      display: none;
+    }
+    .desk-pane.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Issue & Return Desk</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <div class="card-header" style="border: none; padding-bottom: 0;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--primary-navy);">Circulation Desk Operations</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Issue books to registered students and process book returns with instant penalty calculations.</p>
+      </div>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="desk-tabs" style="margin-top: 1rem;">
+      <div class="desk-tab active" onclick="switchTab('issue')">📖 Issue Book to Student</div>
+      <div class="desk-tab" onclick="switchTab('return')">📥 Process Book Return & Fines</div>
+    </div>
+
+    <!-- TAB 1: ISSUE BOOK -->
+    <div id="pane-issue" class="desk-pane active">
+      <div class="card" style="max-width: 720px; margin: 0 auto;">
+        <h2 style="margin-bottom: 1rem; font-size: 1.3rem; color: var(--primary-navy);">Issue Book Form</h2>
+        
+        <form id="issue-form" onsubmit="handleIssueBook(event)">
+          <div class="form-group">
+            <label class="form-label" for="select-student">Select Registered Student *</label>
+            <select id="select-student" class="form-control" required>
+              <option value="">-- Choose Student --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="select-book">Select Book Title (Available Stock) *</label>
+            <select id="select-book" class="form-control" required>
+              <option value="">-- Choose Book --</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Issue Date</label>
+              <input type="text" id="issue-date-display" class="form-control" readonly style="background-color: #f1f5f9;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date (7-Day Period)</label>
+              <input type="text" id="due-date-display" class="form-control" readonly style="background-color: #f1f5f9; font-weight: 600; color: var(--accent-blue);">
+            </div>
+          </div>
+
+          <div style="background-color: var(--accent-blue-light); border: 1px solid rgba(37,99,235,0.2); border-radius: var(--radius-sm); padding: 0.85rem; margin: 1rem 0; font-size: 0.85rem; color: var(--accent-blue);">
+            ℹ️ Issuing will automatically reduce available copies in inventory by 1. The student must return the book on or before the due date.
+          </div>
+
+          <button type="submit" id="btn-issue-submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+            Issue Book
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 2: PROCESS RETURN -->
+    <div id="pane-return" class="desk-pane">
+      <div class="card">
+        <div class="card-header">
+          <h2>Active Loans Awaiting Return</h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Select a loan to return and calculate final overdue fine</span>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input type="text" id="return-search-input" class="form-control" placeholder="Filter by student name or book title..." oninput="filterReturnTable()">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Loan ID</th>
+                <th>Student</th>
+                <th>Book Title</th>
+                <th>Issue Date</th>
+                <th>Due Date</th>
+                <th>Days Overdue</th>
+                <th>Estimated Fine (₹5/day)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="desk-return-tbody">
+              <tr><td colspan="8" style="text-align: center; padding: 2rem;">Loading loans...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Return Confirmation Modal -->
+  <div id="return-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Book Return</h3>
+        <button class="modal-close" onclick="closeReturnModal()">&times;</button>
+      </div>
+      <div id="return-modal-body">
+        <p>Confirm the return of this book to library inventory:</p>
+        <div style="background-color: #f8fafc; border-radius: var(--radius-sm); padding: 1rem; margin: 1rem 0;">
+          <p><strong id="ret-modal-book">Book Title</strong></p>
+          <p style="font-size: 0.85rem; color: var(--text-muted);" id="ret-modal-student">Student Name</p>
+          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+              <span>Due Date:</span> <strong id="ret-modal-due">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 0.35rem;">
+              <span>Overdue Days:</span> <strong id="ret-modal-days" style="color: var(--danger);">0 days</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 1.1rem; margin-top: 0.5rem; color: #dc2626; font-weight: 700;">
+              <span>Final Penalty:</span> <span id="ret-modal-penalty">₹0</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button class="btn btn-secondary" onclick="closeReturnModal()">Cancel</button>
+          <button class="btn btn-primary" id="btn-process-return" onclick="executeReturn()">Confirm Return</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    let activeLoansList = [];
+    let selectedReturnId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = checkAuth(['LIBRARIAN', 'ADMIN']);
+      if (!user) return;
+
+      setupDates();
+      loadStudentsDropdown();
+      loadBooksDropdown();
+      loadActiveLoans();
+
+      // Check if URL has bookId preselected
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('bookId')) {
+        setTimeout(() => {
+          const select = document.getElementById('select-book');
+          select.value = params.get('bookId');
+        }, 500);
+      }
+    });
+
+    function setupDates() {
+      const today = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(today.getDate() + 7);
+
+      document.getElementById('issue-date-display').value = today.toISOString().split('T')[0];
+      document.getElementById('due-date-display').value = dueDate.toISOString().split('T')[0];
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.desk-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.desk-pane').forEach(p => p.classList.remove('active'));
+
+      if (tab === 'issue') {
+        document.querySelectorAll('.desk-tab')[0].classList.add('active');
+        document.getElementById('pane-issue').classList.add('active');
+      } else {
+        document.querySelectorAll('.desk-tab')[1].classList.add('active');
+        document.getElementById('pane-return').classList.add('active');
+        loadActiveLoans();
+      }
+    }
+
+    async function loadStudentsDropdown() {
+      try {
+        const students = await apiGet('/students');
+        const select = document.getElementById('select-student');
+        select.innerHTML = '<option value="">-- Choose Student --</option>' + 
+          students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.email)})</option>`).join('');
+      } catch (err) {
+        console.warn('Failed to load students:', err);
+      }
+    }
+
+    async function loadBooksDropdown() {
+      try {
+        const books = await apiGet('/books');
+        const available = books.filter(b => b.availableQuantity > 0);
+        const select = document.getElementById('select-book');
+        select.innerHTML = '<option value="">-- Choose Book --</option>' + 
+          available.map(b => `<option value="${b.id}">${escapeHtml(b.title)} [Avail: ${b.availableQuantity}/${b.quantity}] - ${escapeHtml(b.author)}</option>`).join('');
+      } catch (err) {
+        console.warn('Failed to load books:', err);
+      }
+    }
+
+    async function handleIssueBook(event) {
+      event.preventDefault();
+
+      const studentId = document.getElementById('select-student').value;
+      const bookId = document.getElementById('select-book').value;
+
+      if (!studentId || !bookId) {
+        showToast('Please select both a student and a book', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-issue-submit');
+      btn.disabled = true;
+      btn.textContent = 'Issuing...';
+
+      try {
+        const res = await apiPost('/borrow', { studentId: parseInt(studentId, 10), bookId: parseInt(bookId, 10) });
+        showToast(res.message || 'Book issued successfully!', 'success');
+        document.getElementById('issue-form').reset();
+        setupDates();
+        loadBooksDropdown();
+        loadActiveLoans();
+      } catch (err) {
+        showToast(err.message || 'Failed to issue book', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Issue Book';
+      }
+    }
+
+    async function loadActiveLoans() {
+      try {
+        const all = await apiGet('/borrow');
+        activeLoansList = all.filter(r => r.status === 'BORROWED');
+        renderReturnTable(activeLoansList);
+      } catch (err) {
+        document.getElementById('desk-return-tbody').innerHTML = 
+          `<tr><td colspan="8" style="text-align: center; color: var(--danger); padding: 2rem;">Failed to load loans: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function renderReturnTable(loans) {
+      const tbody = document.getElementById('desk-return-tbody');
+      if (!loans || loans.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">No active loans awaiting return.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = loans.map(r => `
+        <tr>
+          <td>#${r.id}</td>
+          <td style="font-weight: 600;">${escapeHtml(r.studentName)}<br><span style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(r.studentEmail)}</span></td>
+          <td>${escapeHtml(r.bookTitle)}</td>
+          <td>${r.issueDate}</td>
+          <td style="color: ${r.overdue ? 'var(--danger)' : 'inherit'}; font-weight: ${r.overdue ? '700' : 'normal'};">${r.dueDate}</td>
+          <td>${r.overdueDays > 0 ? `<strong style="color: var(--danger);">${r.overdueDays} days</strong>` : '0 days'}</td>
+          <td>${r.overdue ? `<strong style="color: var(--danger); font-size: 1rem;">₹${r.estimatedPenalty}</strong>` : '₹0'}</td>
+          <td>
+            <button class="btn ${r.overdue ? 'btn-danger' : 'btn-primary'} btn-sm" onclick="openReturnModal(${r.id})">
+              Process Return
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterReturnTable() {
+      const q = document.getElementById('return-search-input').value.toLowerCase().trim();
+      if (!q) {
+        renderReturnTable(activeLoansList);
+      } else {
+        const filtered = activeLoansList.filter(r => 
+          r.studentName.toLowerCase().includes(q) || 
+          r.bookTitle.toLowerCase().includes(q) ||
+          r.studentEmail.toLowerCase().includes(q)
+        );
+        renderReturnTable(filtered);
+      }
+    }
+
+    function openReturnModal(id) {
+      const loan = activeLoansList.find(r => r.id === id);
+      if (!loan) return;
+
+      selectedReturnId = id;
+      document.getElementById('ret-modal-book').textContent = loan.bookTitle;
+      document.getElementById('ret-modal-student').textContent = `Issued to: ${loan.studentName} (${loan.studentEmail})`;
+      document.getElementById('ret-modal-due').textContent = loan.dueDate;
+      document.getElementById('ret-modal-days').textContent = loan.overdueDays > 0 ? `${loan.overdueDays} days late` : 'On time';
+      document.getElementById('ret-modal-penalty').textContent = loan.overdueDays > 0 ? `₹${loan.estimatedPenalty}` : '₹0';
+
+      document.getElementById('return-modal').style.display = 'flex';
+    }
+
+    function closeReturnModal() {
+      document.getElementById('return-modal').style.display = 'none';
+      selectedReturnId = null;
+    }
+
+    async function executeReturn() {
+      if (!selectedReturnId) return;
+
+      const btn = document.getElementById('btn-process-return');
+      btn.disabled = true;
+
+      try {
+        const res = await apiPut(`/borrow/${selectedReturnId}/return`);
+        showToast(res.message || 'Book returned successfully!', 'success');
+        closeReturnModal();
+        loadActiveLoans();
+        loadBooksDropdown();
+      } catch (err) {
+        showToast(err.message || 'Failed to process return', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

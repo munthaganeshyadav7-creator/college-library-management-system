@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Management System</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="auth-wrapper">
+      <div class="auth-header">
+        <h1>Student Registration</h1>
+        <p>Create your library account to borrow books and view history</p>
+      </div>
+
+      <form id="register-form" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label class="form-label" for="reg-name">Full Name *</label>
+          <input type="text" id="reg-name" class="form-control" placeholder="e.g. Rahul Sharma" required minlength="2">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-email">Email Address *</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="e.g. rahul@college.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-phone">Phone Number</label>
+          <input type="tel" id="reg-phone" class="form-control" placeholder="e.g. 9876543210">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Password *</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="Minimum 6 characters" required minlength="6">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-confirm-password">Confirm Password *</label>
+          <input type="password" id="reg-confirm-password" class="form-control" placeholder="Re-enter password" required>
+        </div>
+
+        <button type="submit" id="btn-submit-register" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+          Register Account
+        </button>
+      </form>
+
+      <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+        Already registered? <a href="login.html" style="color: var(--accent-blue); font-weight: 600; text-decoration: none;">Login here</a>
+      </p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    async function handleRegister(event) {
+      event.preventDefault();
+
+      const name = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirmPassword = document.getElementById('reg-confirm-password').value;
+
+      if (password !== confirmPassword) {
+        showToast('Passwords do not match. Please re-enter.', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btn-submit-register');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Registering...';
+
+      try {
+        const res = await apiPost('/register', { name, email, phone, password, confirmPassword });
+        showToast(res.message || 'Registration successful! Please log in.', 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1500);
+      } catch (err) {
+        showToast(err.message || 'Registration failed', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Register Account';
+      }
+    }
+  </script>
+</body>
+</html>

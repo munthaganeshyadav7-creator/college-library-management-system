@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Librarian Dashboard - College Library Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">College Library</span>
+          <span class="brand-subtitle">Librarian Circulation Desk</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <div class="card" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; border: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span class="badge" style="background: rgba(255,255,255,0.15); color: #38bdf8; margin-bottom: 0.5rem;">Librarian Control Center</span>
+          <h1 id="lib-welcome-name" style="font-size: 1.8rem; font-weight: 700;">Circulation Desk</h1>
+          <p id="lib-welcome-email" style="color: #cbd5e1; font-size: 0.9rem;">librarian@library.com</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <a href="issue-return.html" class="btn btn-primary" style="background: #2563eb;">⚡ Issue / Return Desk</a>
+          <a href="manage-books.html" class="btn btn-secondary">📚 Manage Catalog</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Librarian Metrics Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Total Titles</h3>
+          <div class="stat-value" id="lib-stat-titles">--</div>
+          <div class="stat-desc">Catalog titles</div>
+        </div>
+        <div class="stat-icon icon-blue">📖</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Available Stock</h3>
+          <div class="stat-value" id="lib-stat-available">--</div>
+          <div class="stat-desc">Ready to issue</div>
+        </div>
+        <div class="stat-icon icon-green">📦</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Active Loans</h3>
+          <div class="stat-value" id="lib-stat-active">--</div>
+          <div class="stat-desc">Currently checked out</div>
+        </div>
+        <div class="stat-icon icon-amber">⏳</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>Overdue Loans</h3>
+          <div class="stat-value" id="lib-stat-overdue" style="color: var(--danger);">--</div>
+          <div class="stat-desc">Penalty accumulating</div>
+        </div>
+        <div class="stat-icon icon-red">⚠️</div>
+      </div>
+    </div>
+
+    <!-- Active Circulation Table -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Active Borrowing Records</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <a href="issue-return.html" class="btn btn-primary btn-sm">+ Issue New Book</a>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Student Name</th>
+              <th>Student Email</th>
+              <th>Book Title</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Penalty</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="lib-active-tbody">
+            <tr><td colspan="9" style="text-align: center; padding: 2rem;">Loading active loans...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Overdue Monitoring Section -->
+    <div class="card" style="border-left: 4px solid var(--danger);">
+      <div class="card-header">
+        <h2 style="color: var(--danger);">Overdue Loans Monitoring (Rate: ₹5/day)</h2>
+        <span class="badge badge-danger">Immediate Action</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Student</th>
+              <th>Contact Phone</th>
+              <th>Book Title</th>
+              <th>Due Date</th>
+              <th>Days Late</th>
+              <th>Accrued Fine</th>
+              <th>Return & Collect Fine</th>
+            </tr>
+          </thead>
+          <tbody id="lib-overdue-tbody">
+            <tr><td colspan="8" style="text-align: center; padding: 1.5rem;">Checking for overdue records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p>College Library Management System &bull; B.Tech Technical Training (TT) Session Project</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = checkAuth(['LIBRARIAN', 'ADMIN']);
+      if (!user) return;
+
+      document.getElementById('lib-welcome-name').textContent = `Welcome, ${user.name}`;
+      document.getElementById('lib-welcome-email').textContent = `${user.email} (${user.role})`;
+
+      loadLibrarianDashboard();
+    });
+
+    async function loadLibrarianDashboard() {
+      try {
+        const stats = await apiGet('/dashboard');
+        document.getElementById('lib-stat-titles').textContent = stats.totalBookTitles ?? '0';
+        document.getElementById('lib-stat-available').textContent = stats.availableCopies ?? '0';
+        document.getElementById('lib-stat-active').textContent = stats.activeLoans ?? '0';
+        document.getElementById('lib-stat-overdue').textContent = stats.overdueLoans ?? '0';
+
+        const allRecords = await apiGet('/borrow');
+        renderActiveLoans(allRecords.filter(r => r.status === 'BORROWED'));
+
+        const overdueRecords = await apiGet('/borrow/overdue');
+        renderOverdueLoans(overdueRecords);
+      } catch (err) {
+        showToast('Error loading dashboard: ' + err.message, 'error');
+      }
+    }
+
+    function renderActiveLoans(records) {
+      const tbody = document.getElementById('lib-active-tbody');
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">No active borrowings at this moment.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map(r => `
+        <tr>
+          <td>#${r.id}</td>
+          <td style="font-weight: 600;">${escapeHtml(r.studentName)}</td>
+          <td>${escapeHtml(r.studentEmail)}</td>
+          <td>${escapeHtml(r.bookTitle)}</td>
+          <td>${r.issueDate}</td>
+          <td style="color: ${r.overdue ? 'var(--danger)' : 'inherit'}; font-weight: ${r.overdue ? '700' : 'normal'};">${r.dueDate}</td>
+          <td>
+            <span class="badge ${r.overdue ? 'badge-danger' : 'badge-info'}">
+              ${r.overdue ? 'Overdue (' + r.overdueDays + 'd)' : 'Active'}
+            </span>
+          </td>
+          <td>${r.overdue ? '<strong style="color: var(--danger);">₹' + r.estimatedPenalty + '</strong>' : '₹0'}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="quickReturn(${r.id}, ${r.estimatedPenalty})">Process Return</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderOverdueLoans(records) {
+      const tbody = document.getElementById('lib-overdue-tbody');
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 1.5rem; color: var(--success); font-weight: 600;">All active loans are on schedule! No overdue items.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map(r => `
+        <tr>
+          <td>#${r.id}</td>
+          <td style="font-weight: 600;">${escapeHtml(r.studentName)}</td>
+          <td>${escapeHtml(r.studentPhone || 'N/A')}</td>
+          <td>${escapeHtml(r.bookTitle)}</td>
+          <td style="color: var(--danger); font-weight: 700;">${r.dueDate}</td>
+          <td><strong style="color: var(--danger);">${r.overdueDays} days</strong></td>
+          <td><strong style="color: var(--danger); font-size: 1.05rem;">₹${r.estimatedPenalty}</strong></td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="quickReturn(${r.id}, ${r.estimatedPenalty})">Return & Settle Fine</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function quickReturn(recordId, estimatedFine) {
+      let confirmMsg = `Process return for Loan #${recordId}?`;
+      if (estimatedFine > 0) {
+        confirmMsg += `\n⚠️ Late fine of ₹${estimatedFine} will be recorded!`;
+      }
+
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const res = await apiPut(`/borrow/${recordId}/return`);
+        showToast(res.message || 'Book returned successfully!', 'success');
+        loadLibrarianDashboard();
+      } catch (err) {
+        showToast(err.message || 'Failed to process return', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
