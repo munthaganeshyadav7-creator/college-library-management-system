@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Librarian Dashboard - College Library</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <div id="navbar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">📚 Librarian Portal & Circulation Desk</h1>
+        <p class="page-subtitle" id="librarian-welcome-text">Manage inventory, issue/return transactions, and overdue fines.</p>
+      </div>
+      <div>
+        <a href="issue-return.html" class="btn btn-primary">⚡ Issue / Return Desk</a>
+        <a href="manage-books.html" class="btn btn-secondary">📦 Book Inventory</a>
+        <a href="reports.html" class="btn btn-secondary">📊 Reports</a>
+      </div>
+    </div>
+
+    <div id="lib-alert"></div>
+
+    <!-- Metrics Cards Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Total Titles</div>
+          <div class="stat-value" id="lib-stat-titles">-</div>
+        </div>
+        <div class="stat-icon icon-blue">📚</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Available Copies</div>
+          <div class="stat-value" id="lib-stat-available">-</div>
+        </div>
+        <div class="stat-icon icon-green">✓</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Active Loans</div>
+          <div class="stat-value" id="lib-stat-active">-</div>
+        </div>
+        <div class="stat-icon icon-amber">⏳</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Overdue Loans</div>
+          <div class="stat-value" id="lib-stat-overdue">-</div>
+        </div>
+        <div class="stat-icon icon-rose">⚠</div>
+      </div>
+    </div>
+
+    <!-- Quick Issue Box & Overdue Alert Box -->
+    <div class="form-row" style="margin-bottom: 2rem;">
+      
+      <!-- Quick Issue Form -->
+      <div class="content-card" style="margin-bottom: 0;">
+        <div class="content-card-header">
+          <h2 class="content-card-title">⚡ Quick Book Issue</h2>
+        </div>
+        <form onsubmit="handleQuickIssue(event)">
+          <div class="form-group">
+            <label class="form-label" for="issue-book-select">Select Book *</label>
+            <select id="issue-book-select" class="form-control" required>
+              <option value="">-- Choose Available Book --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="issue-student-email">Student Email *</label>
+            <input type="email" id="issue-student-email" class="form-control" placeholder="e.g. student@college.com" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Issue Book (7-Day Loan)</button>
+        </form>
+      </div>
+
+      <!-- Overdue Books Alert Box -->
+      <div class="content-card" style="margin-bottom: 0;">
+        <div class="content-card-header">
+          <h2 class="content-card-title" style="color: var(--danger);">⚠ Critical Overdue Loans</h2>
+          <a href="issue-return.html" class="btn btn-sm btn-secondary">Process Returns &rarr;</a>
+        </div>
+        <div id="overdue-preview-list">
+          <p style="color: var(--text-muted);">Loading overdue books...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Active Circulation Table -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <h2 class="content-card-title">📖 Active Circulation Records</h2>
+        <a href="issue-return.html" class="btn btn-sm btn-primary">Full Circulation Desk &rarr;</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Student</th>
+              <th>Book Title</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Overdue Days</th>
+              <th>Est. Fine</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="lib-active-tbody">
+            <tr>
+              <td colspan="8" style="text-align:center; color: var(--text-muted);">Loading records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div id="footer-container"></div>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!checkPageAccess(['LIBRARIAN', 'ADMIN'])) return;
+      renderNavbar('dashboard');
+
+      const user = getCurrentUser();
+      if (user) {
+        document.getElementById('librarian-welcome-text').textContent = `Librarian: ${user.name} (${user.email})`;
+      }
+
+      loadLibrarianDashboard();
+      loadAvailableBooksDropdown();
+    });
+
+    async function loadLibrarianDashboard() {
+      try {
+        // 1. Stats
+        const statRes = await fetch(`${API_BASE_URL}/dashboard`, { headers: getAuthHeaders() });
+        const statResult = await statRes.json();
+        if (statResult.success && statResult.data) {
+          const d = statResult.data;
+          document.getElementById('lib-stat-titles').textContent = d.totalTitles;
+          document.getElementById('lib-stat-available').textContent = d.availableCopies;
+          document.getElementById('lib-stat-active').textContent = d.activeLoans;
+          document.getElementById('lib-stat-overdue').textContent = d.overdueLoans;
+        }
+
+        // 2. Active Loans
+        const borrowRes = await fetch(`${API_BASE_URL}/borrow`, { headers: getAuthHeaders() });
+        const borrowResult = await borrowRes.json();
+        const tbody = document.getElementById('lib-active-tbody');
+
+        if (borrowResult.success && borrowResult.data) {
+          const activeList = borrowResult.data.filter(b => b.status === 'ISSUED' || b.status === 'OVERDUE');
+          if (activeList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 1.5rem;">No active loans currently.</td></tr>';
+          } else {
+            tbody.innerHTML = activeList.slice(0, 8).map(r => {
+              const isLate = r.overdueDays > 0;
+              return `
+                <tr>
+                  <td>#${r.id}</td>
+                  <td><strong>${r.studentName}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${r.studentEmail}</span></td>
+                  <td>${r.bookTitle}</td>
+                  <td>${formatDate(r.issueDate)}</td>
+                  <td>${formatDate(r.dueDate)}</td>
+                  <td style="color: ${isLate ? 'var(--danger)' : 'inherit'}; font-weight: ${isLate ? '700' : 'normal'}">
+                    ${isLate ? `${r.overdueDays} days late` : 'On Schedule'}
+                  </td>
+                  <td style="color: ${isLate ? 'var(--danger)' : 'inherit'}; font-weight: 700;">
+                    ${formatCurrency(r.estimatedPenalty || 0)}
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-success" onclick="processReturn(${r.id}, '${r.bookTitle.replace(/'/g, "\\'")}', ${r.overdueDays}, ${r.estimatedPenalty || 0})">
+                      Return Book
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+
+        // 3. Overdue Preview
+        const overdueRes = await fetch(`${API_BASE_URL}/borrow/overdue`, { headers: getAuthHeaders() });
+        const overdueResult = await overdueRes.json();
+        const overdueContainer = document.getElementById('overdue-preview-list');
+
+        if (overdueResult.success && overdueResult.data) {
+          if (overdueResult.data.length === 0) {
+            overdueContainer.innerHTML = '<p style="color: var(--success); font-weight: 600;">✓ Excellent! No overdue books today.</p>';
+          } else {
+            overdueContainer.innerHTML = overdueResult.data.slice(0, 3).map(r => `
+              <div style="padding: 0.6rem 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>${r.bookTitle}</strong><br>
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">${r.studentName} &bull; ${r.overdueDays} days overdue</span>
+                </div>
+                <div style="text-align: right;">
+                  <span class="badge badge-danger">Fine: ${formatCurrency(r.estimatedPenalty)}</span>
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
+      } catch (e) {
+        console.error('Error loading librarian dashboard:', e);
+      }
+    }
+
+    async function loadAvailableBooksDropdown() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/books`);
+        const result = await res.json();
+        if (result.success && result.data) {
+          const select = document.getElementById('issue-book-select');
+          select.innerHTML = '<option value="">-- Choose Available Book --</option>' + 
+            result.data.filter(b => b.availableQuantity > 0).map(b => `
+              <option value="${b.id}">${b.title} (${b.availableQuantity} available)</option>
+            `).join('');
+        }
+      } catch (e) {
+        console.error('Error fetching book dropdown:', e);
+      }
+    }
+
+    async function handleQuickIssue(e) {
+      e.preventDefault();
+      const bookId = document.getElementById('issue-book-select').value;
+      const studentEmail = document.getElementById('issue-student-email').value.trim();
+
+      if (!bookId || !studentEmail) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/borrow`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ bookId: Number(bookId), studentEmail })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showAlert('lib-alert', result.message, 'success');
+          document.getElementById('issue-student-email').value = '';
+          loadLibrarianDashboard();
+          loadAvailableBooksDropdown();
+        } else {
+          showAlert('lib-alert', result.message, 'danger');
+        }
+      } catch (e) {
+        showAlert('lib-alert', 'Failed to issue book.', 'danger');
+      }
+    }
+
+    async function processReturn(recordId, bookTitle, overdueDays, penalty) {
+      let promptMsg = `Confirm return for '${bookTitle}'?`;
+      if (overdueDays > 0) {
+        promptMsg += `\n\nNotice: This book is ${overdueDays} days late.\nCalculated penalty: ${formatCurrency(penalty)} (at ₹5/day).`;
+      }
+      if (!confirm(promptMsg)) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/borrow/${recordId}/return`, {
+          method: 'PUT',
+          headers: getAuthHeaders()
+        });
+        const result = await res.json();
+        if (result.success) {
+          showAlert('lib-alert', result.message, 'success');
+          loadLibrarianDashboard();
+          loadAvailableBooksDropdown();
+        } else {
+          showAlert('lib-alert', result.message, 'danger');
+        }
+      } catch (e) {
+        showAlert('lib-alert', 'Error returning book.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

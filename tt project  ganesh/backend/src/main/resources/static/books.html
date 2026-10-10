@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Book Catalog - College Library</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <div id="navbar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">📚 Library Book Catalog</h1>
+        <p class="page-subtitle">Search, filter by discipline, and borrow textbook titles from the central collection.</p>
+      </div>
+      <div id="catalog-header-actions">
+        <!-- Conditional role action button -->
+      </div>
+    </div>
+
+    <div id="catalog-alert"></div>
+
+    <!-- Filter & Search Controls -->
+    <div class="content-card" style="padding: 1.25rem;">
+      <div class="search-bar-wrapper" style="margin-bottom: 1rem;">
+        <input type="text" id="catalog-search" class="form-control search-input" placeholder="Search by book title, author name, or category keywords...">
+        <button class="btn btn-primary" onclick="loadCatalog()">Search Catalog</button>
+        <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="category-pills" id="category-pills-container">
+        <button class="category-pill active" onclick="filterCategory('ALL')">All Disciplines</button>
+        <button class="category-pill" onclick="filterCategory('Computer Science')">Computer Science</button>
+        <button class="category-pill" onclick="filterCategory('Software Engineering')">Software Engineering</button>
+        <button class="category-pill" onclick="filterCategory('AI & ML')">AI & ML</button>
+        <button class="category-pill" onclick="filterCategory('Networks')">Networks</button>
+        <button class="category-pill" onclick="filterCategory('Mathematics')">Mathematics</button>
+        <button class="category-pill" onclick="filterCategory('Information Technology')">Information Technology</button>
+        <button class="category-pill" onclick="filterCategory('Programming')">Programming</button>
+      </div>
+    </div>
+
+    <!-- Books Grid Section -->
+    <div class="books-grid" id="catalog-books-grid">
+      <p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">Loading books...</p>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div id="footer-container"></div>
+
+  <script src="js/script.js"></script>
+  <script>
+    let currentCategory = 'ALL';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNavbar('books');
+
+      const user = getCurrentUser();
+      if (user && (user.role === 'LIBRARIAN' || user.role === 'ADMIN')) {
+        document.getElementById('catalog-header-actions').innerHTML = `
+          <a href="manage-books.html" class="btn btn-primary">⚙️ Manage & Add Books</a>
+        `;
+      }
+
+      loadCatalog();
+
+      document.getElementById('catalog-search').addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') loadCatalog();
+      });
+    });
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      const pills = document.querySelectorAll('.category-pill');
+      pills.forEach(p => {
+        if (p.textContent.trim() === (cat === 'ALL' ? 'All Disciplines' : cat)) {
+          p.classList.add('active');
+        } else {
+          p.classList.remove('active');
+        }
+      });
+      loadCatalog();
+    }
+
+    function resetFilters() {
+      document.getElementById('catalog-search').value = '';
+      filterCategory('ALL');
+    }
+
+    async function loadCatalog() {
+      const search = document.getElementById('catalog-search').value.trim();
+      const grid = document.getElementById('catalog-books-grid');
+
+      let url = `${API_BASE_URL}/books`;
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (currentCategory && currentCategory !== 'ALL') params.append('category', currentCategory);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      try {
+        const res = await fetch(url);
+        const result = await res.json();
+
+        if (result.success && result.data) {
+          if (result.data.length === 0) {
+            grid.innerHTML = '<p style="text-align: center; color: var(--text-muted); grid-column: 1/-1; padding: 2rem;">No books found matching your search criteria.</p>';
+            return;
+          }
+
+          const user = getCurrentUser();
+          const isStudent = user && user.role === 'STUDENT';
+
+          grid.innerHTML = result.data.map(book => `
+            <div class="book-card">
+              <div>
+                <div class="book-card-category">${book.category}</div>
+                <h3 class="book-card-title">${book.title}</h3>
+                <p class="book-card-author">By <strong>${book.author}</strong></p>
+              </div>
+              <div>
+                <div class="book-card-stock">
+                  <span>Available: <strong>${book.availableQuantity} / ${book.quantity}</strong></span>
+                  <span class="badge ${book.availableQuantity > 0 ? 'badge-success' : 'badge-danger'}">
+                    ${book.availableQuantity > 0 ? 'In Stock' : 'Out of Stock'}
+                  </span>
+                </div>
+                <div style="margin-top: 1rem;">
+                  <button class="btn btn-sm btn-primary btn-block" onclick="handleBorrowClick(${book.id})" ${book.availableQuantity <= 0 ? 'disabled' : ''}>
+                    ${book.availableQuantity > 0 ? (isStudent ? 'Borrow This Book' : 'Borrow / Issue') : 'Currently Unavailable'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        grid.innerHTML = '<p style="text-align: center; color: var(--danger); grid-column: 1/-1;">Could not load catalog.</p>';
+      }
+    }
+
+    async function handleBorrowClick(bookId) {
+      const user = getCurrentUser();
+      if (!user) {
+        alert('Please login as a student to borrow books.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      if (user.role === 'LIBRARIAN' || user.role === 'ADMIN') {
+        window.location.href = `issue-return.html?bookId=${bookId}`;
+        return;
+      }
+
+      if (!confirm('Confirm borrowing this book for 7 days?')) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/borrow`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ bookId })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showAlert('catalog-alert', result.message, 'success');
+          loadCatalog();
+        } else {
+          showAlert('catalog-alert', result.message, 'danger');
+        }
+      } catch (e) {
+        showAlert('catalog-alert', 'Error communicating with server.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Login - College Library</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <div id="navbar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    <div class="auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h2>Library Portal Login</h2>
+          <p>Access your Student, Librarian, or Administrator account</p>
+        </div>
+
+        <div id="login-alert"></div>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input type="email" id="login-email" class="form-control" placeholder="user@domain.com" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-control" placeholder="Enter password" required>
+          </div>
+
+          <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 0.5rem;">
+            Sign In
+          </button>
+        </form>
+
+        <!-- Development Demo Credentials Box -->
+        <div class="demo-credentials-box">
+          <div class="demo-credentials-title">
+            <span>🔑 Quick Demo Credentials (Click to Fill)</span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.5rem;">
+            Click any button below to instantly populate development accounts for testing:
+          </p>
+          <div class="demo-btn-group">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="fillDemo('student@college.com', 'Student@123')">
+              👨‍🎓 Student
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="fillDemo('librarian@library.com', 'Lib@12345')">
+              📚 Librarian
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="fillDemo('admin@library.com', 'Admin@123')">
+              ⚙️ Administrator
+            </button>
+          </div>
+        </div>
+
+        <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+          New Student? <a href="register.html" style="color: var(--primary-blue); font-weight: 600; text-decoration: none;">Register an account here</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div id="footer-container"></div>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNavbar('login');
+      // If already logged in, redirect to appropriate dashboard
+      const user = getCurrentUser();
+      if (user && getAuthToken()) {
+        redirectByRole(user.role);
+      }
+    });
+
+    function fillDemo(email, password) {
+      document.getElementById('login-email').value = email;
+      document.getElementById('login-password').value = password;
+      clearAlert('login-alert');
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      clearAlert('login-alert');
+
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const submitBtn = document.getElementById('login-submit-btn');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Authenticating...';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          saveAuthSession(result.data);
+          showAlert('login-alert', `Login successful as ${result.data.role}! Redirecting...`, 'success');
+          setTimeout(() => {
+            redirectByRole(result.data.role);
+          }, 800);
+        } else {
+          showAlert('login-alert', result.message || 'Invalid email or password.', 'danger');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Sign In';
+        }
+      } catch (err) {
+        showAlert('login-alert', 'Could not reach library backend server. Please verify Spring Boot is running.', 'danger');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+      }
+    }
+  </script>
+</body>
+</html>

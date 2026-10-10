@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - College Library</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <div id="navbar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">👨‍🎓 Student Portal Dashboard</h1>
+        <p class="page-subtitle" id="student-welcome-text">Welcome to your student library account.</p>
+      </div>
+      <div>
+        <a href="books.html" class="btn btn-primary">📖 Browse Book Catalog</a>
+        <a href="my-borrowings.html" class="btn btn-secondary">📋 My Borrowings</a>
+      </div>
+    </div>
+
+    <div id="student-alert"></div>
+
+    <!-- Student Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Active Loans</div>
+          <div class="stat-value" id="my-active-loans">0</div>
+        </div>
+        <div class="stat-icon icon-blue">📚</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Overdue Books</div>
+          <div class="stat-value" id="my-overdue-loans">0</div>
+        </div>
+        <div class="stat-icon icon-rose">⚠</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Total Books Borrowed</div>
+          <div class="stat-value" id="my-total-borrowed">0</div>
+        </div>
+        <div class="stat-icon icon-green">✓</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Outstanding Fine Dues</div>
+          <div class="stat-value" id="my-unpaid-penalties">₹0.00</div>
+        </div>
+        <div class="stat-icon icon-amber">💰</div>
+      </div>
+    </div>
+
+    <!-- Currently Issued / Active Borrowings Section -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <h2 class="content-card-title">⏳ My Current Active Loans</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Standard loan period: 7 days (₹5/day late fee)</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Book Title</th>
+              <th>Author / Category</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Overdue Days</th>
+              <th>Est. Fine</th>
+            </tr>
+          </thead>
+          <tbody id="active-loans-tbody">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted);">Loading active loans...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick Search & Borrow Section -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <h2 class="content-card-title">🔍 Quick Book Search & Borrow</h2>
+        <a href="books.html" class="btn btn-sm btn-secondary">Explore All Books &rarr;</a>
+      </div>
+
+      <div class="search-bar-wrapper">
+        <input type="text" id="student-search-input" class="form-control search-input" placeholder="Search by title, author, or category...">
+        <button class="btn btn-primary" onclick="searchQuickBooks()">Search Catalog</button>
+      </div>
+
+      <div class="books-grid" id="student-books-container">
+        <!-- Dynamic Book Cards -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div id="footer-container"></div>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!checkPageAccess(['STUDENT', 'LIBRARIAN', 'ADMIN'])) return;
+      renderNavbar('dashboard');
+
+      const user = getCurrentUser();
+      if (user) {
+        document.getElementById('student-welcome-text').textContent = `Logged in as ${user.name} (${user.email})`;
+      }
+
+      loadStudentDashboardData();
+      searchQuickBooks();
+
+      document.getElementById('student-search-input').addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') searchQuickBooks();
+      });
+    });
+
+    async function loadStudentDashboardData() {
+      try {
+        // 1. Fetch dashboard metrics
+        const statRes = await fetch(`${API_BASE_URL}/dashboard`, {
+          headers: getAuthHeaders()
+        });
+        const statResult = await statRes.json();
+        if (statResult.success && statResult.data) {
+          const d = statResult.data;
+          document.getElementById('my-active-loans').textContent = d.myActiveLoans || 0;
+          document.getElementById('my-overdue-loans').textContent = d.myOverdueLoans || 0;
+          document.getElementById('my-total-borrowed').textContent = d.myTotalBorrowed || 0;
+          document.getElementById('my-unpaid-penalties').textContent = formatCurrency(d.myUnpaidPenalties || 0);
+        }
+
+        // 2. Fetch my borrowings
+        const borrowRes = await fetch(`${API_BASE_URL}/borrow/my`, {
+          headers: getAuthHeaders()
+        });
+        const borrowResult = await borrowRes.json();
+        const tbody = document.getElementById('active-loans-tbody');
+
+        if (borrowResult.success && borrowResult.data) {
+          const activeList = borrowResult.data.filter(b => b.status === 'ISSUED' || b.status === 'OVERDUE');
+          if (activeList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">You have no active loans right now. Explore books below to borrow!</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = activeList.map(record => {
+            const isLate = record.status === 'OVERDUE' || record.overdueDays > 0;
+            return `
+              <tr>
+                <td><strong>${record.bookTitle}</strong></td>
+                <td>${record.bookAuthor} <span style="font-size: 0.75rem; color: var(--text-muted);">(${record.bookCategory})</span></td>
+                <td>${formatDate(record.issueDate)}</td>
+                <td>${formatDate(record.dueDate)}</td>
+                <td>
+                  <span class="badge ${isLate ? 'badge-danger' : 'badge-info'}">
+                    ${isLate ? 'OVERDUE' : 'ISSUED'}
+                  </span>
+                </td>
+                <td style="color: ${isLate ? 'var(--danger)' : 'inherit'}; font-weight: ${isLate ? '700' : 'normal'}">
+                  ${record.overdueDays > 0 ? `${record.overdueDays} days late` : 'On Schedule'}
+                </td>
+                <td style="color: ${isLate ? 'var(--danger)' : 'inherit'}; font-weight: 700;">
+                  ${formatCurrency(record.estimatedPenalty || 0)}
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.error('Error loading student dashboard:', e);
+      }
+    }
+
+    async function searchQuickBooks() {
+      const search = document.getElementById('student-search-input').value.trim();
+      const container = document.getElementById('student-books-container');
+      try {
+        const url = search ? `${API_BASE_URL}/books?search=${encodeURIComponent(search)}` : `${API_BASE_URL}/books`;
+        const res = await fetch(url);
+        const result = await res.json();
+
+        if (result.success && result.data) {
+          if (result.data.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">No matching books found.</p>';
+            return;
+          }
+
+          container.innerHTML = result.data.slice(0, 4).map(book => `
+            <div class="book-card">
+              <div>
+                <div class="book-card-category">${book.category}</div>
+                <h3 class="book-card-title">${book.title}</h3>
+                <p class="book-card-author">By ${book.author}</p>
+              </div>
+              <div>
+                <div class="book-card-stock">
+                  <span>Stock: <strong>${book.availableQuantity} / ${book.quantity}</strong></span>
+                  <span class="badge ${book.availableQuantity > 0 ? 'badge-success' : 'badge-danger'}">
+                    ${book.availableQuantity > 0 ? 'Available' : 'Out of Stock'}
+                  </span>
+                </div>
+                <div style="margin-top: 1rem;">
+                  <button class="btn btn-sm btn-primary btn-block" onclick="borrowStudentBook(${book.id})" ${book.availableQuantity <= 0 ? 'disabled' : ''}>
+                    ${book.availableQuantity > 0 ? 'Borrow Book' : 'Out of Stock'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        container.innerHTML = '<p style="text-align: center; color: var(--danger); grid-column: 1/-1;">Error loading books.</p>';
+      }
+    }
+
+    async function borrowStudentBook(bookId) {
+      if (!confirm('Confirm borrowing this book for 7 days?')) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/borrow`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ bookId })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showAlert('student-alert', result.message, 'success');
+          loadStudentDashboardData();
+          searchQuickBooks();
+        } else {
+          showAlert('student-alert', result.message, 'danger');
+        }
+      } catch (e) {
+        showAlert('student-alert', 'Error communicating with server.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

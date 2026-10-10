@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Borrowing History - College Library</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <div id="navbar-container"></div>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">📋 My Borrowing History</h1>
+        <p class="page-subtitle">Track your active textbook loans, return deadlines, overdue days, and penalty records.</p>
+      </div>
+      <div>
+        <a href="books.html" class="btn btn-primary">Borrow New Book</a>
+      </div>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="category-pills">
+      <button class="category-pill active" onclick="filterBorrowings('ALL')">All Records</button>
+      <button class="category-pill" onclick="filterBorrowings('ISSUED')">Active Loans</button>
+      <button class="category-pill" onclick="filterBorrowings('OVERDUE')">Overdue Loans</button>
+      <button class="category-pill" onclick="filterBorrowings('RETURNED')">Returned Books</button>
+    </div>
+
+    <!-- Borrowing Records Table -->
+    <div class="content-card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Book Title</th>
+              <th>Author / Category</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Return Date</th>
+              <th>Status</th>
+              <th>Overdue Days</th>
+              <th>Late Fine</th>
+              <th>Fine Status</th>
+            </tr>
+          </thead>
+          <tbody id="borrowings-tbody">
+            <tr>
+              <td colspan="10" style="text-align: center; color: var(--text-muted);">Loading your borrowing records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div id="footer-container"></div>
+
+  <script src="js/script.js"></script>
+  <script>
+    let allRecords = [];
+    let currentFilter = 'ALL';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!checkPageAccess(['STUDENT', 'LIBRARIAN', 'ADMIN'])) return;
+      renderNavbar('borrowings');
+      loadMyBorrowings();
+    });
+
+    async function loadMyBorrowings() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/borrow/my`, {
+          headers: getAuthHeaders()
+        });
+        const result = await res.json();
+        if (result.success && result.data) {
+          allRecords = result.data;
+          renderTable();
+        }
+      } catch (e) {
+        document.getElementById('borrowings-tbody').innerHTML = `
+          <tr><td colspan="10" style="text-align:center; color: var(--danger);">Failed to load records.</td></tr>
+        `;
+      }
+    }
+
+    function filterBorrowings(status) {
+      currentFilter = status;
+      const pills = document.querySelectorAll('.category-pill');
+      pills.forEach(p => {
+        if (p.textContent.trim().toUpperCase().includes(status)) {
+          p.classList.add('active');
+        } else if (status === 'ALL' && p.textContent.trim() === 'All Records') {
+          p.classList.add('active');
+        } else {
+          p.classList.remove('active');
+        }
+      });
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('borrowings-tbody');
+      let filtered = allRecords;
+
+      if (currentFilter === 'ISSUED') {
+        filtered = allRecords.filter(r => r.status === 'ISSUED');
+      } else if (currentFilter === 'OVERDUE') {
+        filtered = allRecords.filter(r => r.status === 'OVERDUE' || r.overdueDays > 0);
+      } else if (currentFilter === 'RETURNED') {
+        filtered = allRecords.filter(r => r.status === 'RETURNED');
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 2rem;">No borrowing records found for this filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((r, idx) => {
+        const isLate = r.status === 'OVERDUE' || (r.status === 'ISSUED' && r.overdueDays > 0);
+        let statusBadge = '';
+        if (r.status === 'RETURNED') {
+          statusBadge = '<span class="badge badge-success">RETURNED</span>';
+        } else if (isLate) {
+          statusBadge = '<span class="badge badge-danger">OVERDUE</span>';
+        } else {
+          statusBadge = '<span class="badge badge-info">ISSUED</span>';
+        }
+
+        let penaltyPaidBadge = '-';
+        if (r.penaltyAmount > 0 || r.estimatedPenalty > 0) {
+          penaltyPaidBadge = r.penaltyPaid 
+            ? '<span class="badge badge-success">PAID</span>' 
+            : '<span class="badge badge-danger">UNPAID</span>';
+        } else {
+          penaltyPaidBadge = '<span class="badge badge-success">CLEARED (₹0)</span>';
+        }
+
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${r.bookTitle}</strong></td>
+            <td>${r.bookAuthor} <span style="font-size:0.75rem; color:var(--text-muted);">(${r.bookCategory})</span></td>
+            <td>${formatDate(r.issueDate)}</td>
+            <td>${formatDate(r.dueDate)}</td>
+            <td>${formatDate(r.returnDate)}</td>
+            <td>${statusBadge}</td>
+            <td style="color: ${r.overdueDays > 0 ? 'var(--danger)' : 'inherit'}; font-weight: ${r.overdueDays > 0 ? '700' : 'normal'}">
+              ${r.overdueDays > 0 ? `${r.overdueDays} days` : '0 days'}
+            </td>
+            <td style="color: ${ (r.penaltyAmount > 0 || r.estimatedPenalty > 0) ? 'var(--danger)' : 'inherit'}; font-weight: 700;">
+              ${formatCurrency(r.penaltyAmount || r.estimatedPenalty || 0)}
+            </td>
+            <td>${penaltyPaidBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
