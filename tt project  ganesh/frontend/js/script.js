@@ -7,7 +7,7 @@
 // Determine backend API Base URL
 const API_BASE_URL = (window.location.origin.includes('localhost:8080') || window.location.origin.includes('127.0.0.1:8080'))
   ? `${window.location.origin}/api`
-  : 'http://localhost:8080/api';
+  : 'https://college-library-backend-9skk.onrender.com/api';
 
 // ===================================================================
 // AUTHENTICATION & SESSION MANAGEMENT
