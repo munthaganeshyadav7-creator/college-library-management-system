@@ -4,7 +4,15 @@
  * Vanilla JavaScript communicating with Spring Boot REST APIs
  */
 
-const API_BASE = window.location.protocol.startsWith('http') ? '/api' : 'http://localhost:8085/api';
+const API_BASE = (() => {
+  if (window.location.hostname.includes('github.io')) {
+    return 'https://college-library-backend-9skk.onrender.com/api';
+  }
+  if (window.location.protocol.startsWith('http')) {
+    return '/api';
+  }
+  return 'http://localhost:8085/api';
+})();
 
 // ================= AUTHENTICATION & USER SESSION =================
 function getAuthUser() {
